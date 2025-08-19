@@ -44,9 +44,24 @@ for i,num in ipairs(mapping) do
     end)
 end
 
--- Hotkey: G to toggle show/hide
+-- Hotkeys
 uis.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.G then
+    if gpe then return end
+
+    -- G = toggle show/hide
+    if input.KeyCode == Enum.KeyCode.G then
         frame.Visible = not frame.Visible
+    end
+
+    -- Ctrl/Cmd + 1/2/3
+    if (uis:IsKeyDown(Enum.KeyCode.LeftControl) or uis:IsKeyDown(Enum.KeyCode.RightControl)
+    or uis:IsKeyDown(Enum.KeyCode.LeftMeta) or uis:IsKeyDown(Enum.KeyCode.RightMeta)) then
+        if input.KeyCode == Enum.KeyCode.One then
+            game.ReplicatedStorage.GameEvents.PetsService:FireServer("SwapPetLoadout", mapping[1])
+        elseif input.KeyCode == Enum.KeyCode.Two then
+            game.ReplicatedStorage.GameEvents.PetsService:FireServer("SwapPetLoadout", mapping[2])
+        elseif input.KeyCode == Enum.KeyCode.Three then
+            game.ReplicatedStorage.GameEvents.PetsService:FireServer("SwapPetLoadout", mapping[3])
+        end
     end
 end)
