@@ -1,0 +1,52 @@
+-- GUI Swap pet loadout
+-- author: plskz (Aai)
+
+local cg = game:GetService("CoreGui")
+local old = cg:FindFirstChild("PetSwapGui")
+if old then old:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PetSwapGui"
+gui.Parent = cg
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 180, 0, 60)
+frame.Position = UDim2.new(0.5, -90, 1, -120)
+frame.BackgroundTransparency = 1
+frame.Active = true
+
+local uis, drag, startPos, startInput = game:GetService("UserInputService")
+uis.InputChanged:Connect(function(input)
+    if drag and input == startInput then
+        local delta = input.Position - drag
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag, startPos, startInput = input.Position, frame.Position, input
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then drag = nil end
+        end)
+    end
+end)
+
+local mapping = {1,3,2}
+for i,num in ipairs(mapping) do
+    local b = Instance.new("TextButton", frame)
+    b.Size, b.Position = UDim2.new(0,40,0,40), UDim2.new(0,(i-1)*60,0,10)
+    b.Text, b.Font, b.TextSize = tostring(i), Enum.Font.SourceSansBold, 20
+    b.TextColor3, b.BackgroundColor3, b.BorderSizePixel = Color3.new(1,1,1), Color3.fromRGB(40,40,40), 0
+    Instance.new("UICorner", b).CornerRadius = UDim.new(1,0)
+    b.MouseButton1Click:Connect(function()
+        game:GetService("ReplicatedStorage").GameEvents.PetsService:FireServer("SwapPetLoadout", num)
+    end)
+end
+
+-- Hotkey: G to toggle show/hide
+uis.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.G then
+        frame.Visible = not frame.Visible
+    end
+end)
