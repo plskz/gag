@@ -1,6 +1,8 @@
 -- GUI Swap pet loadout
 -- author: plskz (Aai)
 
+if game.PlaceId ~= 126884695634066 then return end -- only run in this game (Grow a Garden)
+
 local cg = game:GetService("CoreGui")
 local old = cg:FindFirstChild("PetSwapGui")
 if old then old:Destroy() end
