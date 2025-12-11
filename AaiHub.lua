@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.0.0"
+local SCRIPT_VERSION = "1.2.0"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -78,7 +78,7 @@ PetTradeTab:CreateButton({
 
         local petsToFind = {}
         for pet in targetPetName:gmatch("[^,]+") do
-            pet = pet:gsub("^%s*(.-)%s*$", "%1") -- trim spaces
+            pet = pet:gsub("^%s*(.-)%s*$", "%1")
             table.insert(petsToFind, pet)
         end
 
@@ -120,7 +120,9 @@ PetTradeTab:CreateButton({
     end
 })
 
--- ===== Function to pick/hold a Trading Ticket =====
+-- ============================
+--   HOLD TRADING TICKET
+-- ============================
 local function holdTradingTicket()
     for _, item in ipairs(backpack:GetChildren()) do
         if item:IsA("Tool") and item.Name:lower():find("trading ticket") then
@@ -130,13 +132,14 @@ local function holdTradingTicket()
             end
         end
     end
-    print("No Trading Ticket found in backpack.")
     return false
 end
 
--- ===== Toggle to send trade request (partial name match) =====
+-- ============================
+--   SEND TRADE REQUEST
+-- ============================
 local SendTradeEnabled = false
-local autoAddPetsRunning = false  -- prevents multiple loops
+local autoAddPetsRunning = false
 
 PetTradeTab:CreateToggle({
     Name = "Send Trade Request (Auto Add Pets)",
@@ -146,7 +149,6 @@ PetTradeTab:CreateToggle({
         SendTradeEnabled = Value
 
         if SendTradeEnabled then
-            -- validation
             if targetPlayerName == "" then
                 Rayfield:Notify({Title = "Error", Content = "Enter a target player first!", Duration = 4, Image = "x"})
                 SendTradeEnabled = false
@@ -158,11 +160,11 @@ PetTradeTab:CreateToggle({
                 return
             end
 
-            -- find player (partial match)
+            -- find target player
             local targetPlayer = nil
-            local searchName = targetPlayerName:lower()
+            local search = targetPlayerName:lower()
             for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Name:lower():find(searchName) then
+                if p ~= player and p.Name:lower():find(search) then
                     targetPlayer = p
                     break
                 end
@@ -174,52 +176,51 @@ PetTradeTab:CreateToggle({
                 return
             end
 
-            -- hold ticket + send request
             holdTradingTicket()
             tradeEvents:WaitForChild("SendRequest"):FireServer(targetPlayer)
 
             Rayfield:Notify({
                 Title = "Trade",
-                Content = "Request sent to " .. targetPlayer.Name .. "\nAuto-adding pets every 2s...",
+                Content = "Request sent to " .. targetPlayer.Name,
                 Duration = 5,
                 Image = "check"
             })
 
-            -- start the calm auto-add loop (only once)
+            -- auto add pets smoothly
             if not autoAddPetsRunning then
                 autoAddPetsRunning = true
                 spawn(function()
                     local sentAnyPet = false
 
-                    while SendTradeEnabled and not sentAnyPet and wait(2) do
+                    while SendTradeEnabled and not sentAnyPet and task.wait(2) do
                         local petsToFind = {}
                         for pet in targetPetName:gmatch("[^,]+") do
                             pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
                             table.insert(petsToFind, pet)
                         end
 
-                        local foundThisCycle = false
+                        local added = false
 
                         for _, item in ipairs(backpack:GetChildren()) do
                             if item:IsA("Tool") then
-                                local itemName = item.Name:lower()
+                                local name = item.Name:lower()
                                 for _, petName in ipairs(petsToFind) do
-                                    if itemName:find(petName) then
+                                    if name:find(petName) then
                                         local petId = item:GetAttribute("PET_UUID") or item.Name
                                         pcall(function()
                                             addItem:FireServer("Pet", petId)
                                         end)
-                                        foundThisCycle = true
+                                        added = true
                                         sentAnyPet = true
                                     end
                                 end
                             end
                         end
 
-                        if foundThisCycle then
+                        if added then
                             Rayfield:Notify({
                                 Title = "Pet Trade",
-                                Content = "Successfully added pet(s)! Stopped auto-add.",
+                                Content = "Added pet(s)!",
                                 Duration = 4,
                                 Image = "check"
                             })
@@ -231,14 +232,16 @@ PetTradeTab:CreateToggle({
             end
 
         else
-            -- toggle turned OFF
             Rayfield:Notify({Title = "Trade", Content = "Auto-add stopped.", Duration = 3, Image = "info"})
         end
     end,
 })
 
--- ===== Toggle for Auto Accept & Confirm =====
+-- ============================
+--   AUTO ACCEPT & CONFIRM
+-- ============================
 local AutoAcceptEnabled = false
+
 PetTradeTab:CreateToggle({
     Name = "Auto Accept & Confirm",
     CurrentValue = false,
@@ -248,16 +251,91 @@ PetTradeTab:CreateToggle({
         if AutoAcceptEnabled then
             spawn(function()
                 while AutoAcceptEnabled do
-                    local successAccept, errAccept = pcall(function()
+                    local ok = pcall(function()
                         tradeEvents:WaitForChild("Accept"):FireServer()
                         tradeEvents:WaitForChild("Confirm"):FireServer()
                     end)
-                    if not successAccept then
-                        warn("Error auto accepting/confirming: " .. tostring(errAccept))
-                    end
-                    wait(0.5)
+                    task.wait(1)
                 end
             end)
+        end
+    end
+})
+
+-- ============================
+--  AUTO SEND REQUEST WHEN NEAR
+-- ============================
+local AutoNearTrade = false
+local lastTradedPlayer = nil
+local TRADE_DISTANCE = 10
+local RESET_DISTANCE = 20
+
+PetTradeTab:CreateToggle({
+    Name = "Auto Send Trade (When Near Player)",
+    CurrentValue = false,
+    Flag = "AutoNearTradeToggle",
+    Callback = function(Value)
+        AutoNearTrade = Value
+
+        if AutoNearTrade then
+            spawn(function()
+                while AutoNearTrade do
+                    task.wait(0.4)
+
+                    local char = player.Character
+                    if not char then continue end
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if not hrp then continue end
+
+                    -- 🟩 Auto-hold trading ticket
+                    holdTradingTicket()
+
+                    local tool = char:FindFirstChildWhichIsA("Tool")
+                    if not tool or not tool.Name:lower():find("trading ticket") then
+                        continue
+                    end
+
+                    -- find nearest player
+                    local nearest = nil
+                    local nearestDist = 999
+
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local dist = (hrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < nearestDist then
+                                nearestDist = dist
+                                nearest = p
+                            end
+                        end
+                    end
+
+                    if nearest then
+                        if lastTradedPlayer and nearest ~= lastTradedPlayer then
+                            lastTradedPlayer = nil
+                        end
+
+                        -- send request
+                        if nearestDist <= TRADE_DISTANCE and lastTradedPlayer ~= nearest then
+                            lastTradedPlayer = nearest
+
+                            tradeEvents:WaitForChild("SendRequest"):FireServer(nearest)
+
+                            Rayfield:Notify({
+                                Title = "Trade Request",
+                                Content = "Auto-sent trade to " .. nearest.Name,
+                                Duration = 3,
+                                Image = "check"
+                            })
+                        end
+
+                        if nearestDist > RESET_DISTANCE then
+                            lastTradedPlayer = nil
+                        end
+                    end
+                end
+            end)
+        else
+            lastTradedPlayer = nil
         end
     end
 })
