@@ -9,12 +9,15 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 -- ===== Load Rayfield =====
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- ===== Version =====
+local SCRIPT_VERSION = "1.0.0"
+
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
-    Name = "Aai Hub",
+    Name = "Aai Hub v" .. SCRIPT_VERSION,
     Icon = 0,
-    LoadingTitle = "Aai Hub UI",
-    ShowText = "Aai Hub",
+    LoadingTitle = "Aai Hub UI v" .. SCRIPT_VERSION,
+    ShowText = "Aai Hub v" .. SCRIPT_VERSION,
     Theme = "Default",
     ToggleUIKeybind = "K",
 })
