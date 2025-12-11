@@ -133,45 +133,110 @@ end
 
 -- ===== Toggle to send trade request (partial name match) =====
 local SendTradeEnabled = false
+local spamSending = false
+
 PetTradeTab:CreateToggle({
     Name = "Send Trade Request",
     CurrentValue = false,
     Flag = "SendTradeToggle",
     Callback = function(Value)
         SendTradeEnabled = Value
-        if SendTradeEnabled and targetPlayerName ~= "" then
-            -- find first matching player (case-insensitive)
-            local targetPlayer = nil
-            local searchName = targetPlayerName:lower()
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Name:lower():find(searchName) then
-                    targetPlayer = p
-                    break
-                end
-            end
 
-            if targetPlayer then
-                holdTradingTicket()
-                tradeEvents:WaitForChild("SendRequest"):FireServer(targetPlayer)
-                print("Trade request sent to " .. targetPlayer.Name)
+        if not SendTradeEnabled then
+            spamSending = false
+            return
+        end
+
+        if targetPlayerName == "" then
+            Rayfield:Notify({
+                Title = "Trade",
+                Content = "Enter a target player first.",
+                Duration = 2,
+                Image = "x"
+            })
+            return
+        end
+
+        ---------------------------
+        -- FIND TARGET PLAYER
+        ---------------------------
+        local targetPlayer = nil
+        local searchName = targetPlayerName:lower()
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Name:lower():find(searchName) then
+                targetPlayer = p
+                break
+            end
+        end
+
+        if not targetPlayer then
+            Rayfield:Notify({
+                Title = "Trade",
+                Content = "Player not found: " .. targetPlayerName,
+                Duration = 2,
+                Image = "x"
+            })
+            return
+        end
+
+        ---------------------------
+        -- SEND TRADE REQUEST
+        ---------------------------
+        holdTradingTicket()
+        tradeEvents:WaitForChild("SendRequest"):FireServer(targetPlayer)
+
+        Rayfield:Notify({
+            Title = "Trade",
+            Content = "Trade request sent to " .. targetPlayer.Name,
+            Duration = 2,
+            Image = "check"
+        })
+
+        ---------------------------
+        -- IF PET NAME INPUT IS EMPTY → STOP HERE
+        ---------------------------
+        if targetPetName == "" then return end
+
+        ---------------------------
+        -- SETUP SPAM SEND PET
+        ---------------------------
+        spamSending = true
+
+        -- Listen for successful pet add
+        tradeEvents.AddItem.OnClientEvent:Connect(function(itemType, itemData)
+            if spamSending then
+                spamSending = false
                 Rayfield:Notify({
                     Title = "Trade",
-                    Content = "Trade request sent to " .. targetPlayer.Name,
+                    Content = "Pet added successfully!",
                     Duration = 2,
                     Image = "check"
                 })
-            else
-                warn("No player found matching: " .. targetPlayerName)
-                Rayfield:Notify({
-                    Title = "Trade",
-                    Content = "Player not found: " .. targetPlayerName,
-                    Duration = 2,
-                    Image = "x"
-                })
             end
-        end
+        end)
+
+        ---------------------------
+        -- START SPAM LOOP
+        ---------------------------
+        spawn(function()
+            while spamSending do
+                for _, tool in ipairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        local name = tool.Name:lower()
+                        if name:find(targetPetName) then
+                            local uuid = tool:GetAttribute("PET_UUID") or tool.Name
+                            addItem:FireServer("Pet", uuid)
+                        end
+                    end
+                end
+                wait(0.25)
+            end
+        end)
+
     end
 })
+
 
 -- ===== Toggle for Auto Accept & Confirm =====
 local AutoAcceptEnabled = false
