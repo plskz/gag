@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.2.3"
+local SCRIPT_VERSION = "1.2.4"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
