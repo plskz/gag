@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.2.2"
+local SCRIPT_VERSION = "1.2.3"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -242,8 +242,8 @@ PetTradeTab:CreateToggle({
 -- ============================
 local AutoNearTrade = false
 local lastTradedPlayer = nil
-local TRADE_DISTANCE = 10
-local RESET_DISTANCE = 14
+local TRADE_DISTANCE = 5
+local RESET_DISTANCE = 7
 
 PetTradeTab:CreateToggle({
     Name = "Auto Send Trade (When Near Player)",
@@ -300,6 +300,8 @@ PetTradeTab:CreateToggle({
                                 Duration = 3,
                                 Image = "check"
                             })
+
+                            task.wait(1.5)
 
                             -- Immediately send matching pets
                             local petsToFind = {}
