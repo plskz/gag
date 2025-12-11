@@ -254,29 +254,21 @@ PetTradeTab:CreateToggle({
         AutoNearTrade = Value
 
         if AutoNearTrade then
-            if autoNearTradeThread then return end -- prevent multiple threads
+            if autoNearTradeThread then return end -- prevent double thread
+
             autoNearTradeThread = spawn(function()
                 while AutoNearTrade do
                     task.wait(0.4)
-
-                    if not AutoNearTrade then break end -- stop immediately if toggled off
 
                     local char = player.Character
                     if not char then continue end
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if not hrp then continue end
 
-                    -- 🟩 Auto Equip Trading Ticket
-                    task.wait(1)
-                    holdTradingTicket()
-                    local tool = char:FindFirstChildWhichIsA("Tool")
-                    if not tool or not tool.Name:lower():find("trading ticket") then
-                        continue
-                    end
-
                     -- Find nearest player
                     local nearest = nil
                     local nearestDist = 999
+
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                             local dist = (hrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
@@ -287,77 +279,76 @@ PetTradeTab:CreateToggle({
                         end
                     end
 
-                    if nearest and nearestDist <= TRADE_DISTANCE then
-                        if lastTradedPlayer and nearest ~= lastTradedPlayer then
+                    -- Not near anyone
+                    if not nearest or nearestDist > TRADE_DISTANCE then
+                        if nearestDist > RESET_DISTANCE then
                             lastTradedPlayer = nil
                         end
+                        continue
+                    end
 
-                        if lastTradedPlayer ~= nearest then
-                            lastTradedPlayer = nearest
+                    -- Only equip the trading ticket NOW (not every loop)
+                    local tool = char:FindFirstChildWhichIsA("Tool")
+                    if not tool or not tool.Name:lower():find("trading ticket") then
+                        holdTradingTicket()
+                        task.wait(0.2) -- give time to equip
+                    end
 
-                            tradeEvents:WaitForChild("SendRequest"):FireServer(nearest)
+                    -- Don’t trade same player repeatedly
+                    if lastTradedPlayer == nearest then
+                        continue
+                    end
+                    lastTradedPlayer = nearest
 
-                            Rayfield:Notify({
-                                Title = "Auto Near Trade",
-                                Content = "Sent trade request to " .. nearest.Name,
-                                Duration = 3,
-                                Image = "check"
-                            })
+                    -- Send request
+                    tradeEvents:WaitForChild("SendRequest"):FireServer(nearest)
+                    Rayfield:Notify({
+                        Title = "Auto Near Trade",
+                        Content = "Sent trade request to " .. nearest.Name,
+                        Duration = 3,
+                        Image = "check"
+                    })
 
-                            task.wait(2.7)
+                    -- Slight delay before adding pets
+                    task.wait(1.5) -- NOT SPAMMED
 
-                            -- Send matching pets
-                            local petsToFind = {}
-                            for pet in targetPetName:gmatch("[^,]+") do
-                                pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
-                                table.insert(petsToFind, pet)
-                            end
+                    -- Add pets
+                    local petsToFind = {}
+                    for pet in targetPetName:gmatch("[^,]+") do
+                        pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
+                        table.insert(petsToFind, pet)
+                    end
 
-                            local added = false
-                            for _, item in ipairs(backpack:GetChildren()) do
-                                if item:IsA("Tool") then
-                                    local name = item.Name:lower()
-                                    for _, petName in ipairs(petsToFind) do
-                                        if name:find(petName) then
-                                            local petId = item:GetAttribute("PET_UUID") or item.Name
-                                            pcall(function()
-                                                addItem:FireServer("Pet", petId)
-                                            end)
-                                            added = true
-                                        end
-                                    end
+                    local added = false
+                    for _, item in ipairs(backpack:GetChildren()) do
+                        if item:IsA("Tool") then
+                            local name = item.Name:lower()
+                            for _, petName in ipairs(petsToFind) do
+                                if name:find(petName) then
+                                    local petId = item:GetAttribute("PET_UUID") or item.Name
+                                    pcall(function()
+                                        addItem:FireServer("Pet", petId)
+                                    end)
+                                    added = true
                                 end
-                            end
-
-                            if added then
-                                Rayfield:Notify({
-                                    Title = "Auto Add Pets",
-                                    Content = "Added pet(s) matching: " .. targetPetName,
-                                    Duration = 4,
-                                    Image = "check"
-                                })
-                            else
-                                Rayfield:Notify({
-                                    Title = "Auto Add Pets",
-                                    Content = "No matching pets found.",
-                                    Duration = 4,
-                                    Image = "x"
-                                })
                             end
                         end
                     end
 
-                    -- Reset when far
-                    if nearestDist > RESET_DISTANCE then
-                        lastTradedPlayer = nil
+                    if added then
+                        Rayfield:Notify({
+                            Title = "Auto Add Pets",
+                            Content = "Added pet(s) matching: " .. targetPetName,
+                            Duration = 4,
+                            Image = "check"
+                        })
                     end
                 end
 
-                -- clean up thread
                 autoNearTradeThread = nil
             end)
+
         else
-            -- toggle OFF
             lastTradedPlayer = nil
             Rayfield:Notify({
                 Title = "Auto Near Trade",
