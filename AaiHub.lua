@@ -244,6 +244,7 @@ local AutoNearTrade = false
 local lastTradedPlayer = nil
 local TRADE_DISTANCE = 5
 local RESET_DISTANCE = 7
+local autoNearTradeThread = nil
 
 PetTradeTab:CreateToggle({
     Name = "Auto Send Trade (When Near Player)",
@@ -253,9 +254,12 @@ PetTradeTab:CreateToggle({
         AutoNearTrade = Value
 
         if AutoNearTrade then
-            spawn(function()
+            if autoNearTradeThread then return end -- prevent multiple threads
+            autoNearTradeThread = spawn(function()
                 while AutoNearTrade do
                     task.wait(0.4)
+
+                    if not AutoNearTrade then break end -- stop immediately if toggled off
 
                     local char = player.Character
                     if not char then continue end
@@ -283,12 +287,10 @@ PetTradeTab:CreateToggle({
                     end
 
                     if nearest and nearestDist <= TRADE_DISTANCE then
-                        -- Reset if new player
                         if lastTradedPlayer and nearest ~= lastTradedPlayer then
                             lastTradedPlayer = nil
                         end
 
-                        -- Send trade request if not already sent
                         if lastTradedPlayer ~= nearest then
                             lastTradedPlayer = nearest
 
@@ -303,7 +305,7 @@ PetTradeTab:CreateToggle({
 
                             task.wait(1.5)
 
-                            -- Immediately send matching pets
+                            -- Send matching pets
                             local petsToFind = {}
                             for pet in targetPetName:gmatch("[^,]+") do
                                 pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
@@ -344,17 +346,28 @@ PetTradeTab:CreateToggle({
                         end
                     end
 
-                    -- Reset lastTradedPlayer when far
+                    -- Reset when far
                     if nearestDist > RESET_DISTANCE then
                         lastTradedPlayer = nil
                     end
                 end
+
+                -- clean up thread
+                autoNearTradeThread = nil
             end)
         else
+            -- toggle OFF
             lastTradedPlayer = nil
+            Rayfield:Notify({
+                Title = "Auto Near Trade",
+                Content = "Stopped.",
+                Duration = 3,
+                Image = "info"
+            })
         end
     end
 })
+
 
 -- ============================
 --   AUTO ACCEPT & CONFIRM
