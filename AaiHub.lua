@@ -49,10 +49,10 @@ local PetInput = PetTradeTab:CreateInput({
 })
 
 -- ===== Toggle for clearing pet input =====
-local ClearInputEnabled = true
+local ClearInputEnabled = false
 PetTradeTab:CreateToggle({
     Name = "Clear Input After Sending",
-    CurrentValue = true,
+    CurrentValue = false,
     Flag = "ClearInputToggle",
     Callback = function(Value)
         ClearInputEnabled = Value
