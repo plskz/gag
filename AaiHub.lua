@@ -304,7 +304,7 @@ PetTradeTab:CreateToggle({
                                 Image = "check"
                             })
 
-                            task.wait(1.5)
+                            task.wait(2.7)
 
                             -- Send matching pets
                             local petsToFind = {}
