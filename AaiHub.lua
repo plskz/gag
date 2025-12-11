@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.2.1"
+local SCRIPT_VERSION = "1.2.2"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -238,31 +238,6 @@ PetTradeTab:CreateToggle({
 })
 
 -- ============================
---   AUTO ACCEPT & CONFIRM
--- ============================
-local AutoAcceptEnabled = false
-
-PetTradeTab:CreateToggle({
-    Name = "Auto Accept & Confirm",
-    CurrentValue = false,
-    Flag = "AutoAcceptToggle",
-    Callback = function(Value)
-        AutoAcceptEnabled = Value
-        if AutoAcceptEnabled then
-            spawn(function()
-                while AutoAcceptEnabled do
-                    local ok = pcall(function()
-                        tradeEvents:WaitForChild("Accept"):FireServer()
-                        tradeEvents:WaitForChild("Confirm"):FireServer()
-                    end)
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-})
-
--- ============================
 --  AUTO SEND REQUEST WHEN NEAR + AUTO ADD PETS
 -- ============================
 local AutoNearTrade = false
@@ -378,3 +353,29 @@ PetTradeTab:CreateToggle({
         end
     end
 })
+
+-- ============================
+--   AUTO ACCEPT & CONFIRM
+-- ============================
+local AutoAcceptEnabled = false
+
+PetTradeTab:CreateToggle({
+    Name = "Auto Accept & Confirm",
+    CurrentValue = false,
+    Flag = "AutoAcceptToggle",
+    Callback = function(Value)
+        AutoAcceptEnabled = Value
+        if AutoAcceptEnabled then
+            spawn(function()
+                while AutoAcceptEnabled do
+                    local ok = pcall(function()
+                        tradeEvents:WaitForChild("Accept"):FireServer()
+                        tradeEvents:WaitForChild("Confirm"):FireServer()
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
