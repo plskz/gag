@@ -17,7 +17,7 @@ local Window = Rayfield:CreateWindow({
     Name = "Aai Hub v" .. SCRIPT_VERSION,
     Icon = 0,
     LoadingTitle = "Aai Hub UI v" .. SCRIPT_VERSION,
-    ShowText = "Aai Hub v" .. SCRIPT_VERSION,
+    ShowText = "Aai Hub",
     Theme = "Default",
     ToggleUIKeybind = "K",
 })
