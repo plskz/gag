@@ -267,6 +267,7 @@ PetTradeTab:CreateToggle({
                     if not hrp then continue end
 
                     -- 🟩 Auto Equip Trading Ticket
+                    task.wait(1)
                     holdTradingTicket()
                     local tool = char:FindFirstChildWhichIsA("Tool")
                     if not tool or not tool.Name:lower():find("trading ticket") then
