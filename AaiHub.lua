@@ -133,110 +133,106 @@ end
 
 -- ===== Toggle to send trade request (partial name match) =====
 local SendTradeEnabled = false
-local spamSending = false
+local autoAddPetsRunning = false  -- prevents multiple loops
 
 PetTradeTab:CreateToggle({
-    Name = "Send Trade Request",
+    Name = "Send Trade Request (Auto Add Pets)",
     CurrentValue = false,
     Flag = "SendTradeToggle",
     Callback = function(Value)
         SendTradeEnabled = Value
 
-        if not SendTradeEnabled then
-            spamSending = false
-            return
-        end
+        if SendTradeEnabled then
+            -- validation
+            if targetPlayerName == "" then
+                Rayfield:Notify({Title = "Error", Content = "Enter a target player first!", Duration = 4, Image = "x"})
+                SendTradeEnabled = false
+                return
+            end
+            if targetPetName == "" then
+                Rayfield:Notify({Title = "Error", Content = "Enter pet name(s) first!", Duration = 4, Image = "x"})
+                SendTradeEnabled = false
+                return
+            end
 
-        if targetPlayerName == "" then
+            -- find player (partial match)
+            local targetPlayer = nil
+            local searchName = targetPlayerName:lower()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Name:lower():find(searchName) then
+                    targetPlayer = p
+                    break
+                end
+            end
+
+            if not targetPlayer then
+                Rayfield:Notify({Title = "Trade", Content = "Player not found: " .. targetPlayerName, Duration = 4, Image = "x"})
+                SendTradeEnabled = false
+                return
+            end
+
+            -- hold ticket + send request
+            holdTradingTicket()
+            tradeEvents:WaitForChild("SendRequest"):FireServer(targetPlayer)
+
             Rayfield:Notify({
                 Title = "Trade",
-                Content = "Enter a target player first.",
-                Duration = 2,
-                Image = "x"
+                Content = "Request sent to " .. targetPlayer.Name .. "\nAuto-adding pets every 2s...",
+                Duration = 5,
+                Image = "check"
             })
-            return
-        end
 
-        ---------------------------
-        -- FIND TARGET PLAYER
-        ---------------------------
-        local targetPlayer = nil
-        local searchName = targetPlayerName:lower()
+            -- start the calm auto-add loop (only once)
+            if not autoAddPetsRunning then
+                autoAddPetsRunning = true
+                spawn(function()
+                    local sentAnyPet = false
 
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Name:lower():find(searchName) then
-                targetPlayer = p
-                break
-            end
-        end
+                    while SendTradeEnabled and not sentAnyPet and wait(2) do
+                        local petsToFind = {}
+                        for pet in targetPetName:gmatch("[^,]+") do
+                            pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
+                            table.insert(petsToFind, pet)
+                        end
 
-        if not targetPlayer then
-            Rayfield:Notify({
-                Title = "Trade",
-                Content = "Player not found: " .. targetPlayerName,
-                Duration = 2,
-                Image = "x"
-            })
-            return
-        end
+                        local foundThisCycle = false
 
-        ---------------------------
-        -- SEND TRADE REQUEST
-        ---------------------------
-        holdTradingTicket()
-        tradeEvents:WaitForChild("SendRequest"):FireServer(targetPlayer)
+                        for _, item in ipairs(backpack:GetChildren()) do
+                            if item:IsA("Tool") then
+                                local itemName = item.Name:lower()
+                                for _, petName in ipairs(petsToFind) do
+                                    if itemName:find(petName) then
+                                        local petId = item:GetAttribute("PET_UUID") or item.Name
+                                        pcall(function()
+                                            addItem:FireServer("Pet", petId)
+                                        end)
+                                        foundThisCycle = true
+                                        sentAnyPet = true
+                                    end
+                                end
+                            end
+                        end
 
-        Rayfield:Notify({
-            Title = "Trade",
-            Content = "Trade request sent to " .. targetPlayer.Name,
-            Duration = 2,
-            Image = "check"
-        })
-
-        ---------------------------
-        -- IF PET NAME INPUT IS EMPTY → STOP HERE
-        ---------------------------
-        if targetPetName == "" then return end
-
-        ---------------------------
-        -- SETUP SPAM SEND PET
-        ---------------------------
-        spamSending = true
-
-        -- Listen for successful pet add
-        tradeEvents.AddItem.OnClientEvent:Connect(function(itemType, itemData)
-            if spamSending then
-                spamSending = false
-                Rayfield:Notify({
-                    Title = "Trade",
-                    Content = "Pet added successfully!",
-                    Duration = 2,
-                    Image = "check"
-                })
-            end
-        end)
-
-        ---------------------------
-        -- START SPAM LOOP
-        ---------------------------
-        spawn(function()
-            while spamSending do
-                for _, tool in ipairs(backpack:GetChildren()) do
-                    if tool:IsA("Tool") then
-                        local name = tool.Name:lower()
-                        if name:find(targetPetName) then
-                            local uuid = tool:GetAttribute("PET_UUID") or tool.Name
-                            addItem:FireServer("Pet", uuid)
+                        if foundThisCycle then
+                            Rayfield:Notify({
+                                Title = "Pet Trade",
+                                Content = "Successfully added pet(s)! Stopped auto-add.",
+                                Duration = 4,
+                                Image = "check"
+                            })
                         end
                     end
-                end
-                wait(0.25)
+
+                    autoAddPetsRunning = false
+                end)
             end
-        end)
 
-    end
+        else
+            -- toggle turned OFF
+            Rayfield:Notify({Title = "Trade", Content = "Auto-add stopped.", Duration = 3, Image = "info"})
+        end
+    end,
 })
-
 
 -- ===== Toggle for Auto Accept & Confirm =====
 local AutoAcceptEnabled = false
