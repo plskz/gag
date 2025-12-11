@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.2.0"
+local SCRIPT_VERSION = "1.2.1"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -263,12 +263,12 @@ PetTradeTab:CreateToggle({
 })
 
 -- ============================
---  AUTO SEND REQUEST WHEN NEAR
+--  AUTO SEND REQUEST WHEN NEAR + AUTO ADD PETS
 -- ============================
 local AutoNearTrade = false
 local lastTradedPlayer = nil
 local TRADE_DISTANCE = 10
-local RESET_DISTANCE = 20
+local RESET_DISTANCE = 14
 
 PetTradeTab:CreateToggle({
     Name = "Auto Send Trade (When Near Player)",
@@ -287,18 +287,16 @@ PetTradeTab:CreateToggle({
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if not hrp then continue end
 
-                    -- 🟩 Auto-hold trading ticket
+                    -- 🟩 Auto Equip Trading Ticket
                     holdTradingTicket()
-
                     local tool = char:FindFirstChildWhichIsA("Tool")
                     if not tool or not tool.Name:lower():find("trading ticket") then
                         continue
                     end
 
-                    -- find nearest player
+                    -- Find nearest player
                     local nearest = nil
                     local nearestDist = 999
-
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                             local dist = (hrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
@@ -309,28 +307,69 @@ PetTradeTab:CreateToggle({
                         end
                     end
 
-                    if nearest then
+                    if nearest and nearestDist <= TRADE_DISTANCE then
+                        -- Reset if new player
                         if lastTradedPlayer and nearest ~= lastTradedPlayer then
                             lastTradedPlayer = nil
                         end
 
-                        -- send request
-                        if nearestDist <= TRADE_DISTANCE and lastTradedPlayer ~= nearest then
+                        -- Send trade request if not already sent
+                        if lastTradedPlayer ~= nearest then
                             lastTradedPlayer = nearest
 
                             tradeEvents:WaitForChild("SendRequest"):FireServer(nearest)
 
                             Rayfield:Notify({
-                                Title = "Trade Request",
-                                Content = "Auto-sent trade to " .. nearest.Name,
+                                Title = "Auto Near Trade",
+                                Content = "Sent trade request to " .. nearest.Name,
                                 Duration = 3,
                                 Image = "check"
                             })
-                        end
 
-                        if nearestDist > RESET_DISTANCE then
-                            lastTradedPlayer = nil
+                            -- Immediately send matching pets
+                            local petsToFind = {}
+                            for pet in targetPetName:gmatch("[^,]+") do
+                                pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
+                                table.insert(petsToFind, pet)
+                            end
+
+                            local added = false
+                            for _, item in ipairs(backpack:GetChildren()) do
+                                if item:IsA("Tool") then
+                                    local name = item.Name:lower()
+                                    for _, petName in ipairs(petsToFind) do
+                                        if name:find(petName) then
+                                            local petId = item:GetAttribute("PET_UUID") or item.Name
+                                            pcall(function()
+                                                addItem:FireServer("Pet", petId)
+                                            end)
+                                            added = true
+                                        end
+                                    end
+                                end
+                            end
+
+                            if added then
+                                Rayfield:Notify({
+                                    Title = "Auto Add Pets",
+                                    Content = "Added pet(s) matching: " .. targetPetName,
+                                    Duration = 4,
+                                    Image = "check"
+                                })
+                            else
+                                Rayfield:Notify({
+                                    Title = "Auto Add Pets",
+                                    Content = "No matching pets found.",
+                                    Duration = 4,
+                                    Image = "x"
+                                })
+                            end
                         end
+                    end
+
+                    -- Reset lastTradedPlayer when far
+                    if nearestDist > RESET_DISTANCE then
+                        lastTradedPlayer = nil
                     end
                 end
             end)
