@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.2.6"
+local SCRIPT_VERSION = "1.3.0"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -386,3 +386,64 @@ PetTradeTab:CreateToggle({
     end
 })
 
+-- ============================
+--   CHAT COMMANDS (!give + !off/clear
+-- ============================
+
+local function processGiveCommand(p, pet)
+    -- Set pet input
+    targetPetName = pet
+    PetInput:Set(pet)
+
+    Rayfield:Notify({
+        Title = "Pet Command",
+        Content = p.Name .. " requested pet: " .. pet,
+        Duration = 3,
+        Image = "check"
+    })
+end
+
+
+local PET_COMMANDS = {
+    paradise = "peacock, ostrich, macaw, capybara",
+    zen = "tanuki, shiba, tancho, niho, kappa"
+}
+
+local function connectPlayer(p)
+    p.Chatted:Connect(function(msg)
+        local lowered = msg:lower()
+
+        -- Check for !give command
+        if lowered:sub(1, 6) == "!give " then
+            local command = lowered:sub(7):gsub("^%s*(.-)%s*$", "%1")
+
+            -- If the command is in PET_COMMANDS, replace with mapped pets
+            local petList = PET_COMMANDS[command] or command
+
+            if petList ~= "" then
+                processGiveCommand(p, petList)
+            end
+            return
+        end
+
+        -- !clear or !off command
+        if lowered == "!clear" or lowered == "!off" then
+            targetPetName = "clear"
+            PetInput:Set("")
+
+            Rayfield:Notify({
+                Title = "Pet Command",
+                Content = p.Name .. " requested clear input",
+                Duration = 3,
+                Image = "info"
+            })
+            return
+        end
+    end)
+end
+
+-- Connect existing + future players
+for _, p in ipairs(Players:GetPlayers()) do
+    connectPlayer(p)
+end
+Players.PlayerAdded:Connect(connectPlayer)
