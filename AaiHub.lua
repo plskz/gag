@@ -22,6 +22,21 @@ local Window = Rayfield:CreateWindow({
     ToggleUIKeybind = "K",
 })
 
+-- ===== STARTUP CHANGE DEFAULT GRAPHIC SETTINGS =====
+local settingsService = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("SettingsService")
+
+local settings = {
+	PetScaling = false,
+	PetMutationVFX = false,
+	CropMutationVFX = false,
+	KeepPetOnGround = true,
+	LowerPlantFXQuality = true,
+}
+
+for setting, value in pairs(settings) do
+	settingsService:FireServer("SetSetting", setting, value)
+end
+
 -- ===== Create Tab =====
 local PetTradeTab = Window:CreateTab("Pet Trade", 0)
 
