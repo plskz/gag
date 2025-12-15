@@ -261,6 +261,42 @@ local TRADE_DISTANCE = 5
 local RESET_DISTANCE = 7
 local autoNearTradeThread = nil
 
+local function addPetsOnce()
+    local petsToFind = {}
+
+    for pet in targetPetName:gmatch("[^,]+") do
+        pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
+        table.insert(petsToFind, pet)
+    end
+
+    local added = false
+
+    for _, item in ipairs(backpack:GetChildren()) do
+        if item:IsA("Tool") then
+            local name = item.Name:lower()
+
+            for _, petName in ipairs(petsToFind) do
+                if name:find(petName) then
+                    local petId = item:GetAttribute("PET_UUID") or item.Name
+                    pcall(function()
+                        addItem:FireServer("Pet", petId)
+                    end)
+                    added = true
+                end
+            end
+        end
+    end
+
+    if added then
+        Rayfield:Notify({
+            Title = "Auto Add Pets",
+            Content = "Added pet(s) matching: " .. targetPetName,
+            Duration = 4,
+            Image = "check"
+        })
+    end
+end
+
 PetTradeTab:CreateToggle({
     Name = "Auto Send Trade (When Near Player)",
     CurrentValue = false,
@@ -324,40 +360,14 @@ PetTradeTab:CreateToggle({
                         Image = "check"
                     })
 
-                    -- Slight delay before adding pets
-                    task.wait(1.5) -- NOT SPAMMED
+                    -- Wait before adding pets
+                    task.wait(1.5) -- 
 
-                    -- Add pets
-                    local petsToFind = {}
-                    for pet in targetPetName:gmatch("[^,]+") do
-                        pet = pet:gsub("^%s*(.-)%s*$", "%1"):lower()
-                        table.insert(petsToFind, pet)
-                    end
+                    -- Add pets (1st run)
+                    addPetsOnce()
 
-                    local added = false
-                    for _, item in ipairs(backpack:GetChildren()) do
-                        if item:IsA("Tool") then
-                            local name = item.Name:lower()
-                            for _, petName in ipairs(petsToFind) do
-                                if name:find(petName) then
-                                    local petId = item:GetAttribute("PET_UUID") or item.Name
-                                    pcall(function()
-                                        addItem:FireServer("Pet", petId)
-                                    end)
-                                    added = true
-                                end
-                            end
-                        end
-                    end
-
-                    if added then
-                        Rayfield:Notify({
-                            Title = "Auto Add Pets",
-                            Content = "Added pet(s) matching: " .. targetPetName,
-                            Duration = 4,
-                            Image = "check"
-                        })
-                    end
+                    -- Add pets again after 3 seconds
+                    task.delay(3, addPetsOnce)
                 end
 
                 autoNearTradeThread = nil
