@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.3.2"
+local SCRIPT_VERSION = "1.3.3"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -366,8 +366,8 @@ PetTradeTab:CreateToggle({
                     -- Add pets (1st run)
                     addPetsOnce()
 
-                    -- Add pets again after 3 seconds
-                    task.delay(3, addPetsOnce)
+                    -- Add pets again after 5 seconds
+                    task.delay(5, addPetsOnce)
                 end
 
                 autoNearTradeThread = nil
