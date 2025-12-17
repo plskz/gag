@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.3.3"
+local SCRIPT_VERSION = "1.4.0"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({
@@ -385,9 +385,76 @@ PetTradeTab:CreateToggle({
     end
 })
 
+-- ============================
+--   AUTO ACCEPT TRADING TICKET REQUEST FROM PLAYER
+-- ============================
+
+local AutoAcceptRequestEnabled = true -- 🔥 DEFAULT ENABLED
+local autoAcceptRequestConnection = nil
+
+-- start enabled immediately
+autoAcceptRequestConnection =
+    tradeEvents:WaitForChild("SendRequest").OnClientEvent:Connect(function(requestId, fromPlayer)
+        if not AutoAcceptRequestEnabled then return end
+        if not requestId then return end
+
+        pcall(function()
+            tradeEvents:WaitForChild("RespondRequest"):FireServer(requestId, true)
+        end)
+
+        Rayfield:Notify({
+            Title = "Auto Accept (Request)",
+            Content = "Accepted trade from " .. (fromPlayer and fromPlayer.Name or "Unknown"),
+            Duration = 3,
+            Image = "check"
+        })
+    end)
+
+PetTradeTab:CreateToggle({
+    Name = "Auto Accept Trade (Request)",
+    CurrentValue = true,
+    Flag = "AutoAcceptRequestToggle",
+    Callback = function(Value)
+        AutoAcceptRequestEnabled = Value
+
+        if AutoAcceptRequestEnabled then
+            -- reconnect if needed
+            if not autoAcceptRequestConnection then
+                autoAcceptRequestConnection =
+                    tradeEvents:WaitForChild("SendRequest").OnClientEvent:Connect(function(requestId, fromPlayer)
+                        if not AutoAcceptRequestEnabled then return end
+                        if not requestId then return end
+
+                        pcall(function()
+                            tradeEvents:WaitForChild("RespondRequest"):FireServer(requestId, true)
+                        end)
+                    end)
+            end
+
+            Rayfield:Notify({
+                Title = "Auto Accept (Request)",
+                Content = "Enabled",
+                Duration = 2,
+                Image = "check"
+            })
+        else
+            if autoAcceptRequestConnection then
+                autoAcceptRequestConnection:Disconnect()
+                autoAcceptRequestConnection = nil
+            end
+
+            Rayfield:Notify({
+                Title = "Auto Accept (Request)",
+                Content = "Disabled",
+                Duration = 2,
+                Image = "info"
+            })
+        end
+    end
+})
 
 -- ============================
---   AUTO ACCEPT & CONFIRM
+--   AUTO ACCEPT & CONFIRM (INSIDE THE TRADING TICKET)
 -- ============================
 local AutoAcceptEnabled = false
 
