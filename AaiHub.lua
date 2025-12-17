@@ -10,10 +10,10 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.4.0"
+local SCRIPT_VERSION = "1.4.1"
 
 -- ===== Create Window =====
-local Window = Rayfield:CreateWindow({
+local Window = Rayfield:CreateWindow({          
     Name = "Aai Hub v" .. SCRIPT_VERSION,
     Icon = 0,
     LoadingTitle = "Aai Hub UI v" .. SCRIPT_VERSION,
@@ -384,6 +384,8 @@ PetTradeTab:CreateToggle({
         end
     end
 })
+
+local Divider = PetTradeTab:CreateDivider()
 
 -- ============================
 --   AUTO ACCEPT TRADING TICKET REQUEST FROM PLAYER
