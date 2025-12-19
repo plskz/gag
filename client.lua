@@ -76,6 +76,10 @@ end
 local function autoTeleportLoop()
 	while true do
 		local petCount = getPetCount()
+		if petCount == 59 then
+            unequipCurrentTool()
+		end
+
 		if petCount >= 60 then
 			print("Pet count reached 60. Stopping teleport.")
 			break
