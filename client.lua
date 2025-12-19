@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 
+task.wait(5)
+
 -- =========================
 -- Pet Counter UI
 -- =========================
