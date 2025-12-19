@@ -82,23 +82,11 @@ local function sendFullInventoryWebhook(petCount)
 		username = "Pet Monitor",
 		embeds = {{
 			title = "🚨 Full Inventory Detected",
-			color = 16711680, -- red
+			color = 16711680,
 			fields = {
-				{
-					name = "Player",
-					value = player.Name,
-					inline = true
-				},
-				{
-					name = "UserId",
-					value = tostring(player.UserId),
-					inline = true
-				},
-				{
-					name = "Pet Count",
-					value = tostring(petCount),
-					inline = true
-				}
+				{name = "Player", value = player.Name, inline = true},
+				{name = "UserId", value = tostring(player.UserId), inline = true},
+				{name = "Pet Count", value = tostring(petCount), inline = true}
 			},
 			timestamp = DateTime.now():ToIsoDate()
 		}}
@@ -107,14 +95,14 @@ local function sendFullInventoryWebhook(petCount)
 	local json = HttpService:JSONEncode(data)
 
 	pcall(function()
-		HttpService:PostAsync(
-			WEBHOOK_URL,
-			json,
-			Enum.HttpContentType.ApplicationJson
-		)
+		http_request({
+			Url = WEBHOOK_URL,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = json
+		})
 	end)
 end
-
 
 -- Main auto teleport loop
 local function autoTeleportLoop()
@@ -123,7 +111,7 @@ local function autoTeleportLoop()
 		if petCount >= 60 then
 			sendFullInventoryWebhook(petCount)
 			task.wait(0.5)
-            player:Kick("Pet count reached 60. You have been kicked.")
+			player:Kick("Pet count reached 60. You have been kicked.")
 			break
 		end
 
