@@ -76,8 +76,6 @@ end
 local function autoTeleportLoop()
 	while true do
 		local petCount = getPetCount()
-        unequipCurrentTool()
-
 		if petCount >= 60 then
             player:Kick("Pet count reached 60. You have been kicked.")
 			break
@@ -91,9 +89,6 @@ local function autoTeleportLoop()
 			-- Teleport to target player
 			hrp.CFrame = targetHRP.CFrame
 			print("Teleported to", targetPlayer.Name)
-
-			-- Unequip current tool
-			unequipCurrentTool()
 
 			-- Wait before going back to spawn
 			wait(teleportDelay1)
@@ -119,3 +114,13 @@ else
 		spawn(autoTeleportLoop)
 	end)
 end
+
+-- =========================
+-- Repeated Unequip Loop (every 2 seconds)
+-- =========================
+task.spawn(function()
+	while true do
+		unequipCurrentTool()
+		task.wait(1.5)
+	end
+end)
