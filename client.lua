@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 
-task.wait(5)
+task.wait(10)
 
 -- =========================
 -- Pet Counter UI
@@ -13,9 +13,9 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local petCountLabel = Instance.new("TextLabel")
-petCountLabel.Size = UDim2.fromScale(0.14, 0.045)
-petCountLabel.Position = UDim2.fromScale(0.5, 0.001)
-petCountLabel.AnchorPoint = Vector2.new(0.5, 0)
+petCountLabel.Size = UDim2.fromScale(0.13, 0.050)
+petCountLabel.Position = UDim2.fromScale(0.69, -0.05)
+petCountLabel.AnchorPoint = Vector2.new(0.5, 0.01)
 petCountLabel.BackgroundTransparency = 0.25
 petCountLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 petCountLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -49,7 +49,7 @@ backpack.ChildRemoved:Connect(updatePetCountUI)
 -- =========================
 -- Auto Teleport Logic
 -- =========================
-local spawnPos = Vector3.new(-15.985567092895508, 2.999999761581421, -0.5251120328903198)
+local spawnPos = Vector3.new(-15.471762657165527, 2.999999761581421, 38.0368766784668)
 local targetUserIds = {6213699873, 7094128799, 8811314817, 8836187991, 8740772099}
 local teleportDelay1 = 6  -- seconds before going back to spawn
 local teleportDelay2 = 11 -- seconds before going to player again
@@ -89,7 +89,7 @@ local function autoTeleportLoop()
 			local targetHRP = targetPlayer.Character.HumanoidRootPart
 
 			-- Teleport to target player
-			hrp.CFrame = targetHRP.CFrame
+			hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -1.5)
 			print("Teleported to", targetPlayer.Name)
 
 			-- Wait before going back to spawn
@@ -118,7 +118,7 @@ else
 end
 
 -- =========================
--- Repeated Unequip Loop (every 2 seconds)
+-- Repeated Unequip Loop
 -- =========================
 task.spawn(function()
 	while true do
