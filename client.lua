@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local backpack = player:WaitForChild("Backpack")
+local HttpService = game:GetService("HttpService")
+
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1451668507094814741/8Z9Gr1XHSeoV2LZbGZLSqgBwog5FUZsQMtbrQbTQF7fR0X_sVmKmToM2OKKWcfXyqERj"
 
 task.wait(10)
 
@@ -74,11 +77,52 @@ local function unequipCurrentTool()
 	end
 end
 
+local function sendFullInventoryWebhook(petCount)
+	local data = {
+		username = "Pet Monitor",
+		embeds = {{
+			title = "🚨 Full Inventory Detected",
+			color = 16711680, -- red
+			fields = {
+				{
+					name = "Player",
+					value = player.Name,
+					inline = true
+				},
+				{
+					name = "UserId",
+					value = tostring(player.UserId),
+					inline = true
+				},
+				{
+					name = "Pet Count",
+					value = tostring(petCount),
+					inline = true
+				}
+			},
+			timestamp = DateTime.now():ToIsoDate()
+		}}
+	}
+
+	local json = HttpService:JSONEncode(data)
+
+	pcall(function()
+		HttpService:PostAsync(
+			WEBHOOK_URL,
+			json,
+			Enum.HttpContentType.ApplicationJson
+		)
+	end)
+end
+
+
 -- Main auto teleport loop
 local function autoTeleportLoop()
 	while true do
 		local petCount = getPetCount()
 		if petCount >= 60 then
+			sendFullInventoryWebhook(petCount)
+			task.wait(0.5)
             player:Kick("Pet count reached 60. You have been kicked.")
 			break
 		end
