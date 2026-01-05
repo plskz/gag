@@ -401,7 +401,6 @@ autoAcceptRequestConnection =
         if not requestId then return end
 
         pcall(function()
-            task.wait(0.3)
             tradeEvents:WaitForChild("RespondRequest"):FireServer(requestId, true)
         end)
 
@@ -429,7 +428,6 @@ PetTradeTab:CreateToggle({
                         if not requestId then return end
 
                         pcall(function()
-                            task.wait(0.3)
                             tradeEvents:WaitForChild("RespondRequest"):FireServer(requestId, true)
                         end)
                     end)
